@@ -17,25 +17,26 @@ url = "http://127.0.0.1:11434/api/chat"
 
 # Initialize the conversation history
 messages = [{"role": "user", "content": "Hello, how are you?"}]
+audio_files = []  # List to keep track of audio files
 
 def speak(text):
+    global audio_files
+    audio_count = len(audio_files) + 1
+    filename = f"response{audio_count}.mp3"  # Unique filename
+
     tts = gTTS(text=text, lang='en')
-    tts.save("response.mp3")
-    
+    tts.save(filename)
+
     # Load and play the audio file
-    pygame.mixer.music.load("response.mp3")
+    pygame.mixer.music.load(filename)
     pygame.mixer.music.play()
     
     # Wait for the sound to finish playing
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)  # Add a small delay to prevent high CPU usage
     
-    pygame.mixer.music.stop()  # Stop the music
-    pygame.mixer.quit()  # Quit the mixer
-    pygame.mixer.init()  # Reinitialize the mixer
+    audio_files.append(filename)  # Keep track of the audio file
 
-    os.remove("response.mp3")  # Clean up the audio file
-    
 def listen():
     # Initialize microphone stream
     p = pyaudio.PyAudio()
@@ -73,21 +74,21 @@ while True:
 
     if response.status_code == 200:
         print("Response from the server:")
+        assistant_message = ""
         for line in response.iter_lines(decode_unicode=True):
             if line:
                 try:
                     json_data = json.loads(line)
-                    # Extract and print the assistant's message
+                    # Extract the assistant's message
                     if "message" in json_data and "content" in json_data["message"]:
                         assistant_message = json_data["message"]["content"]
-                        print(assistant_message, end="")
-                        speak(assistant_message)  # Speak the assistant's message
-                        # Append the assistant's message to the conversation history
-                        messages.append({"role": "assistant", "content": assistant_message})
-
+                        print(assistant_message)
                 except json.JSONDecodeError:
                     print("Error decoding JSON:", line)
-        print()  # ensure the final output is on a new line
+
+        # Speak the assistant's message after collecting the entire response
+        if assistant_message:
+            speak(assistant_message)
 
     else:
         print(f"Error: {response.status_code}")
@@ -96,3 +97,8 @@ while True:
     # Optional: Break the loop if the user types 'exit'
     if user_input.lower() == 'exit':
         break
+
+# Cleanup: Remove all generated audio files
+for audio_file in audio_files:
+    if os.path.exists(audio_file):
+        os.remove(audio_file)
