@@ -1,3 +1,5 @@
+# this was just for testing purposes
+# it is not part of the main program
 import ollama
 
 client = ollama.Client()

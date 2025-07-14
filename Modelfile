@@ -1,4 +1,8 @@
-FROM gemma3:1b
+# this is the paramerer file for the model
+# you can create one on ollama by using the command:
+# ollama create "whatever name you like name over here" --file Modelfile
+
+FROM gemma3:1b # you must use a model that you have already downloaded
 
 PARAMETER temperature 1
 
